@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import * as Sentry from '@sentry/node';
 import logger from '../config/logger';
 import { CustomError } from '../types';
 
@@ -10,6 +11,14 @@ export const errorHandler = (
   next: NextFunction,
 ): void => {
   logger.error(error);
+
+  // Capture error in Sentry for non-client errors
+  if (error.statusCode && error.statusCode >= 500) {
+    Sentry.captureException(error);
+  } else if (!error.statusCode) {
+    // Capture unexpected errors
+    Sentry.captureException(error);
+  }
 
   if (error instanceof z.ZodError) {
     res.status(400).json({

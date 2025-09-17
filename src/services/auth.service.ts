@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import ms from 'ms';
 import bcrypt from 'bcrypt';
+import * as Sentry from '@sentry/node';
 
 import { AppDataSource } from '../data-source';
 import { config } from '../config';
@@ -28,43 +29,88 @@ class AuthService {
   }
 
   async register({ firstName, lastName, email, password }: RegisterDto) {
+    // Add breadcrumb for registration attempt
+    Sentry.addBreadcrumb({
+      message: 'User registration attempt',
+      category: 'auth',
+      level: 'info',
+      data: { email, firstName, lastName },
+    });
+
     const existing = await this.credentialRepository.findOneBy({ email });
 
     if (existing) {
+      Sentry.addBreadcrumb({
+        message: 'Registration failed - email already exists',
+        category: 'auth',
+        level: 'warning',
+        data: { email },
+      });
       throw createError('email already in use', 400);
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    try {
+      const passwordHash = await bcrypt.hash(password, 10);
 
-    const user = new User();
-    user.firstName = firstName;
-    user.lastName = lastName;
-    user.email = email;
+      const user = new User();
+      user.firstName = firstName;
+      user.lastName = lastName;
+      user.email = email;
 
-    await this.userRepository.save(user);
+      await this.userRepository.save(user);
 
-    const credential = new Credential();
-    credential.email = email;
-    credential.passwordHash = passwordHash;
-    credential.user = user;
+      const credential = new Credential();
+      credential.email = email;
+      credential.passwordHash = passwordHash;
+      credential.user = user;
 
-    await this.credentialRepository.save(credential);
+      await this.credentialRepository.save(credential);
 
-    await publishUserRegistered({
-      key: user.id?.toString(),
-      value: user,
-    });
+      // Set user context for Sentry
+      Sentry.setUser({
+        id: user.id?.toString(),
+        email: user.email,
+      });
 
-    return user;
+      await publishUserRegistered({
+        key: user.id?.toString(),
+        value: user,
+      });
+
+      Sentry.addBreadcrumb({
+        message: 'User registered successfully',
+        category: 'auth',
+        level: 'info',
+        data: { userId: user.id, email },
+      });
+
+      return user;
+    } catch (error) {
+      Sentry.captureException(error);
+      throw error;
+    }
   }
 
   async login(email: string, password: string) {
+    Sentry.addBreadcrumb({
+      message: 'User login attempt',
+      category: 'auth',
+      level: 'info',
+      data: { email },
+    });
+
     const credential = await this.credentialRepository.findOne({
       where: { email },
       relations: ['user'],
     });
 
     if (!credential) {
+      Sentry.addBreadcrumb({
+        message: 'Login failed - user not found',
+        category: 'auth',
+        level: 'warning',
+        data: { email },
+      });
       throw createError('invalid credentials', 401);
     }
 
@@ -74,36 +120,79 @@ class AuthService {
     );
 
     if (!isValidPassword) {
+      Sentry.addBreadcrumb({
+        message: 'Login failed - invalid password',
+        category: 'auth',
+        level: 'warning',
+        data: { email, userId: credential.user.id },
+      });
       throw createError('invalid credentials', 401);
     }
 
-    const token = jwt.sign(
-      {
-        id: credential.user.id,
+    try {
+      const token = jwt.sign(
+        {
+          id: credential.user.id,
+          email: credential.email,
+          firstName: credential.user.firstName,
+          lastName: credential.user.lastName,
+        },
+        config.JWT_SECRET,
+        { expiresIn: config.JWT_EXPIRES_IN as ms.StringValue },
+      );
+
+      await redis.setex(
+        `auth:${credential.user.id}:${token}`,
+        24 * 60 * 60,
+        'true',
+      );
+
+      // Set user context for Sentry
+      Sentry.setUser({
+        id: credential.user.id?.toString(),
         email: credential.email,
+      });
+
+      Sentry.addBreadcrumb({
+        message: 'User logged in successfully',
+        category: 'auth',
+        level: 'info',
+        data: { userId: credential.user.id, email },
+      });
+
+      return {
+        token,
         firstName: credential.user.firstName,
         lastName: credential.user.lastName,
-      },
-      config.JWT_SECRET,
-      { expiresIn: config.JWT_EXPIRES_IN as ms.StringValue },
-    );
-
-    await redis.setex(
-      `auth:${credential.user.id}:${token}`,
-      24 * 60 * 60,
-      'true',
-    );
-
-    return {
-      token,
-      firstName: credential.user.firstName,
-      lastName: credential.user.lastName,
-      email: credential.email,
-    };
+        email: credential.email,
+      };
+    } catch (error) {
+      Sentry.captureException(error);
+      throw error;
+    }
   }
 
   async logout(userId: number, token: string) {
-    await redis.del(`auth:${userId}:${token}`);
+    try {
+      Sentry.addBreadcrumb({
+        message: 'User logout',
+        category: 'auth',
+        level: 'info',
+        data: { userId },
+      });
+
+      await redis.del(`auth:${userId}:${token}`);
+
+      Sentry.addBreadcrumb({
+        message: 'User logged out successfully',
+        category: 'auth',
+        level: 'info',
+        data: { userId },
+      });
+    } catch (error) {
+      Sentry.captureException(error);
+      throw error;
+    }
   }
 }
 

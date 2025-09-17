@@ -8,6 +8,10 @@ interface Config {
   JWT_EXPIRES_IN: string;
   LOG_LEVEL: string;
   ALLOWED_ORIGINS: string;
+  SENTRY_DSN?: string;
+  SENTRY_ENVIRONMENT: string;
+  SENTRY_SAMPLE_RATE: number;
+  SENTRY_TRACES_SAMPLE_RATE: number;
 }
 
 export const config: Config = {
@@ -21,4 +25,9 @@ export const config: Config = {
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '24h',
   LOG_LEVEL: process.env.LOG_LEVEL || 'info',
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || 'http://localhost:3000',
+  SENTRY_DSN: process.env.SENTRY_DSN,
+  SENTRY_ENVIRONMENT: process.env.SENTRY_ENVIRONMENT || 'development',
+  SENTRY_SAMPLE_RATE: Number(process.env.SENTRY_SAMPLE_RATE) || 1.0,
+  SENTRY_TRACES_SAMPLE_RATE:
+    Number(process.env.SENTRY_TRACES_SAMPLE_RATE) || 0.1,
 };

@@ -1,4 +1,5 @@
 import { Server } from 'http';
+import * as Sentry from '@sentry/node';
 import { AppDataSource } from '../data-source';
 import logger from '../config/logger';
 import { RedisClient } from '../config/redis';
@@ -25,13 +26,19 @@ export const setupGracefulShutdown = (server: Server) => {
 
       await disconnectKafka();
 
+      // Close Sentry with a timeout
+      await Sentry.close(2000);
+      logger.info('Sentry client closed');
+
       logger.info(
         'Graceful shutdown completed\n--------------------------------',
       );
       process.exit(0);
     } catch (error) {
       logger.error('Error during shutdown:', error);
-      process.exit(1);
+      Sentry.captureException(error);
+      // Give Sentry time to send the error before exiting
+      setTimeout(() => process.exit(1), 1000);
     }
   };
 
@@ -40,11 +47,13 @@ export const setupGracefulShutdown = (server: Server) => {
 
   process.on('uncaughtException', (error) => {
     logger.error('Uncaught Exception:', error);
+    Sentry.captureException(error);
     shutdown('uncaughtException');
   });
 
   process.on('unhandledRejection', (reason, promise) => {
     logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    Sentry.captureException(reason as Error);
     shutdown('unhandledRejection');
   });
 };
