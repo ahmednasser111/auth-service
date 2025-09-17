@@ -1,31 +1,58 @@
-import swaggerJSDoc from 'swagger-jsdoc';
+// src/config/swagger.ts
+import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import { Express } from 'express';
 
-const options: swaggerJSDoc.Options = {
+const options: swaggerJsdoc.Options = {
   definition: {
-    openapi: '3.0.0',
+    openapi: '3.0.3',
     info: {
       title: 'Auth Service API',
       version: '1.0.0',
-      description: 'API documentation for Auth Service',
+      description: `
+A production-ready authentication and authorization microservice.
+
+### 🚀 Features
+- User Registration & JWT Authentication
+- Redis-based Token Management
+- Kafka Event Publishing
+- Sentry Monitoring
+- Swagger/OpenAPI Docs
+- Health Check Endpoints
+- Secure with Helmet, CORS, Winston Logging
+`,
+      contact: {
+        name: 'Ahmed Nasser',
+        url: 'https://github.com/ahmednasser111',
+        email: 'ahmednaser7707@gmail.com',
+      },
     },
     servers: [
       {
         url: 'http://localhost:3001',
-        description: 'Local server',
+        description: 'Local Development',
       },
-      // {
-      //   url: 'https://api.yourdomain.com/api/v1',
-      //   description: 'Production server',
-      // },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
     ],
   },
   apis: ['./src/routes/*.ts'],
 };
 
-const swaggerSpec = swaggerJSDoc(options);
+const swaggerSpec = swaggerJsdoc(options);
 
-export const setupSwagger = (app: Express) => {
+export function setupSwagger(app: Express) {
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-};
+}

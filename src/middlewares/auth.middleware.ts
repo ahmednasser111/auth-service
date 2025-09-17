@@ -10,6 +10,8 @@ const publicRoutes = [
   '/',
   '/favicon.ico',
   '/docs',
+  '/docs/*',
+  '/test-sentry',
 ];
 
 export const verifyToken = (

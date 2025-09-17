@@ -6,10 +6,46 @@ import * as Sentry from '@sentry/node';
 
 const indexRouter = Router();
 
+/**
+ * @openapi
+ * /:
+ *   get:
+ *     summary: Root endpoint
+ *     description: Returns the service name and status
+ *     tags:
+ *       - General
+ *     responses:
+ *       200:
+ *         description: Service is running
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 service:
+ *                   type: string
+ *                 status:
+ *                   type: string
+ *                   example: running
+ */
 indexRouter.get('/', async (req, res): Promise<any> => {
   return res.json({ service: config.SERVICE_NAME, status: 'running' });
 });
 
+/**
+ * @openapi
+ * /health:
+ *   get:
+ *     summary: Health check
+ *     description: Returns the health status of the service and its dependencies
+ *     tags:
+ *       - Monitoring
+ *     responses:
+ *       200:
+ *         description: Service is healthy
+ *       503:
+ *         description: Service is degraded or unavailable
+ */
 indexRouter.get('/health', async (req, res): Promise<any> => {
   const health = {
     service: config.SERVICE_NAME,
@@ -23,7 +59,6 @@ indexRouter.get('/health', async (req, res): Promise<any> => {
   };
 
   try {
-    // Check database connection
     if (AppDataSource.isInitialized) {
       await AppDataSource.query('SELECT 1');
       health.checks.database = 'connected';
@@ -36,7 +71,6 @@ indexRouter.get('/health', async (req, res): Promise<any> => {
   }
 
   try {
-    // Check Redis connection
     await redis.ping();
     health.checks.redis = 'connected';
   } catch (error) {
@@ -44,7 +78,6 @@ indexRouter.get('/health', async (req, res): Promise<any> => {
     health.status = 'degraded';
   }
 
-  // Check Sentry configuration
   if (!config.SENTRY_DSN) {
     health.checks.sentry = 'not_configured';
   }
@@ -63,7 +96,18 @@ indexRouter.get('/health', async (req, res): Promise<any> => {
   return res.status(statusCode).json(health);
 });
 
-// Test endpoint for Sentry (only in development)
+/**
+ * @openapi
+ * /test-sentry:
+ *   get:
+ *     summary: Test Sentry integration
+ *     description: Throws a test error to verify Sentry reporting (only available in development)
+ *     tags:
+ *       - Monitoring
+ *     responses:
+ *       200:
+ *         description: Test error sent to Sentry
+ */
 if (process.env.NODE_ENV === 'development') {
   indexRouter.get('/test-sentry', async (req, res): Promise<any> => {
     try {
