@@ -1,0 +1,154 @@
+{
+	"info": {
+		"_postman_id": "59afc8cc-6e03-4b8e-975c-daa895a8af9f",
+		"name": "auth-service",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "48542896"
+	},
+	"item": [
+		{
+			"name": "auth",
+			"item": [
+				{
+					"name": "register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"firstName\": \"Ahmed\",\r\n  \"lastName\": \"Nasser\",\r\n  \"email\": \"ahmednaser7707@gmail.com\",\r\n  \"password\": \"Pas#3014708\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{auth-local}}/api/v1/auth/register",
+							"host": [
+								"{{auth-local}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "logout",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhaG1lZG5hc2VyNzcwN0BnbWFpbC5jb20iLCJmaXJzdE5hbWUiOiJBaG1lZCIsImxhc3ROYW1lIjoiTmFzc2VyIiwiaWF0IjoxNzU4MTM2NzIxLCJleHAiOjE3NTgyMjMxMjF9.R6TJdkBSZ55hzbj4TUxr7bTtBqCRLflZ8ehCY0XoqhQ",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{auth-local}}/api/v1/auth/logout",
+							"host": [
+								"{{auth-local}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"ahmednaser7707@gmail.com\",\r\n  \"password\": \"Pas#3014708\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{auth-local}}/api/v1/auth/login",
+							"host": [
+								"{{auth-local}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "docs",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{auth-local}}/docs",
+					"host": [
+						"{{auth-local}}"
+					],
+					"path": [
+						"docs"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "root",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{auth-local}}/",
+					"host": [
+						"{{auth-local}}"
+					],
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "health",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{auth-local}}/health",
+					"host": [
+						"{{auth-local}}"
+					],
+					"path": [
+						"health"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
