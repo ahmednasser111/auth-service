@@ -8,6 +8,8 @@ const publicRoutes = [
   '/api/v1/auth/register',
   '/health',
   '/',
+  '/favicon.ico',
+  '/docs',
 ];
 
 export const verifyToken = (

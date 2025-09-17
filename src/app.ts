@@ -23,6 +23,7 @@ import { config } from './config';
 import { authRouter, indexRouter } from './routes';
 import init from './init';
 import { setupGracefulShutdown } from './utils/shutdown';
+import { setupSwagger } from './config/swagger';
 
 const app = express();
 
@@ -37,6 +38,8 @@ app.use(corsMiddleware);
 
 app.use(reqLogger);
 app.use(express.json());
+
+setupSwagger(app);
 
 // Add Sentry middlewares
 app.use(sentryRequestBreadcrumb);
