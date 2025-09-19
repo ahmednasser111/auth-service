@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import ms from 'ms';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import * as Sentry from '@sentry/node';
 
 import { AppDataSource } from '../data-source';
