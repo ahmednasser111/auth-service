@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "name": "auth-service",
+  "builds": [
+    {
+      "src": "src/app.ts",
+      "use": "@vercel/node",
+      "config": {
+        "memory": 1024,
+        "maxDuration": 10
+      }
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "src/app.ts"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}

@@ -27,11 +27,34 @@ import { setupSwagger } from './config/swagger';
 
 const app = express();
 
+// Lazy initialization of database and Kafka
+let isInitialized = false;
+const initializeApp = async () => {
+  if (!isInitialized) {
+    await AppDataSource.initialize();
+    await init();
+    isInitialized = true;
+    logger.info('Database and services initialized');
+  }
+};
+
 // Sentry request handler must be the first middleware
 app.use(Sentry.Handlers.requestHandler());
 
 // Sentry tracing handler for performance monitoring
 app.use(Sentry.Handlers.tracingHandler());
+
+// Ensure app is initialized before processing any requests
+app.use(async (req, res, next) => {
+  try {
+    await initializeApp();
+    next();
+  } catch (err) {
+    logger.error('Initialization failed', err);
+    Sentry.captureException(err);
+    next(err);
+  }
+});
 
 app.use(helmet());
 app.use(corsMiddleware);
@@ -54,20 +77,24 @@ app.use(Sentry.Handlers.errorHandler());
 
 app.use(errorHandler);
 
-AppDataSource.initialize()
-  .then(async () => {
-    await init();
-
-    const server = app.listen(config.PORT, () => {
-      logger.info(
-        `${config.SERVICE_NAME} is running on http://localhost:${config.PORT}`,
-      );
+// Only listen if not running on Vercel (Vercel's runtime handles listening itself; a plain
+// Docker/production deployment still needs app.listen(), which the previous NODE_ENV check
+// here was accidentally skipping).
+if (!process.env.VERCEL) {
+  initializeApp()
+    .then(() => {
+      const server = app.listen(config.PORT, () => {
+        logger.info(
+          `${config.SERVICE_NAME} is running on http://localhost:${config.PORT}`,
+        );
+      });
+      setupGracefulShutdown(server);
+    })
+    .catch((err) => {
+      logger.error('error during app initialization', err);
+      Sentry.captureException(err);
+      process.exit(1);
     });
+}
 
-    setupGracefulShutdown(server);
-  })
-  .catch((err) => {
-    logger.error('error during Data Source initialization', err);
-    Sentry.captureException(err);
-    process.exit(1);
-  });
+export default app;
